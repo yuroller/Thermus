@@ -1,18 +1,18 @@
 #include "taskFlyport.h"
-#include "SPIHelper.h"
 #include "HTTPlib.h"
+#include "DYPTH01.h"
 
-#include <time.h>
+#define PIN_SCK p8
+#define PIN_SDO p10
+#define PIN_SDI p12
+#define PIN_SS_N p14
 
-#define DELAY_RETRY_INIT_SNTP 50 // 10ms units
-#define EPOCH_SANE_VALUE 1413299584 // 14 Oct 2014 17:13
-
-#define PIN_SCLK p8
-//#define PIN_MOSI p10
-#define PIN_MISO p12
-#define PIN_CS p14
-
-static SPIContext g_spiCtx;
+/* XIVELY PARAMETERS */
+//const char XivelyServer[] = "api.xively.com";
+//const char XivelyPort[] = "80";
+//const char XivelyAPIKey[250];
+//char XivelyFeedID[250];
+//TCP_SOCKET XivelyClient = INVALID_SOCKET;
 
 static void _initWifi()
 {
@@ -23,61 +23,30 @@ static void _initWifi()
 	vTaskDelay(25);
 	UARTWrite(1, "Thermus connected...hello world!\r\n");
 }
-
-static void _initRtc()
-{
-	char s[50];
-	struct tm *ts;
-	time_t now;
-	DWORD epoch = SNTPGetUTCSeconds();
-
-	while (epoch < EPOCH_SANE_VALUE)
-	{
-		UARTWrite(1, "Retrying init from SNTP!\r\n");
-		vTaskDelay(DELAY_RETRY_INIT_SNTP);
-	}
-	
-	now = (time_t)epoch;
-	ts = gmtime(&now);
-	RTCCSet(ts);
-	sprintf(s, "Setting clock to: %s\r\n", asctime(ts));
-	UARTWrite(1, s);
-}
- 
-static void _initSpi()
-{
-	IOInit(PIN_SCLK, SPICLKOUT);
-	//IOInit(PIN_MOSI, SPI_OUT);
-	IOInit(PIN_MISO, SPI_IN);
-	IOPut(PIN_CS, ON);
-	IOInit(PIN_CS, OUT);
-   	SPIConfig(&g_spiCtx, SPI_OPT_SLAVE | SPI_OPT_MODE_0, PIN_CS, 250000);
-	SPIContextRestore(&g_spiCtx);
-	SPIOpen();
-}
   
-static void _initAlarm()
-{
-	struct tm ts;
-	RTCCGet(&ts);
-	ts.tm_min = 0;
-	ts.tm_sec = 0;
-	RTCCAlarmConf(&ts, REPEAT_INFINITE, EVERY_MIN, NO_ALRM_EVENT);
-}
-
 void FlyportTask()
 {
 
 	// Flyport connects to default network
 
 	_initWifi();
-	_initRtc();
-    _initSpi();
-	_initAlarm();
+    TH01_InitPort(PIN_SDI, PIN_SDO, PIN_SCK, PIN_SS_N);
 
 	while(1)
 	{	
-		
-		// INSERT HERE YOUR CODE
+		int t = -1;
+        int hr = -1;
+        char buf[50];
+        int res = TH01_ReadData(&t, &hr);
+        if (res == 0) {
+            sprintf(buf, "Temperature = %d.%d", t / 10, t % 10);
+            UARTWrite(1, buf);
+            sprintf(buf, "Humidity = %d%%", hr);
+            UARTWrite(1, buf);
+        } else {
+            sprintf(buf, "***TH01_ReadData() Error=%d", res);
+            UARTWrite(1, buf);
+        }
+		vTaskDelay(100);
 	}
 }
