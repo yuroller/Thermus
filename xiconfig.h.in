@@ -1,0 +1,7 @@
+#ifndef XICONFIG_H_
+#define XICONFIG_H_
+
+#define XIVELY_API_KEY "my_apy_key"
+#define XIVELY_FEED_ID "my_feed_id"
+
+#endif // !XICONFIG_H_
