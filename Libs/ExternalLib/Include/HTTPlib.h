@@ -13,7 +13,7 @@
 
 #define ARRAY_SIZE(x) (sizeof(x)-1)
 
-#define HTTP_MAX_SIZE 5000
+#define HTTP_MAX_SIZE 2000 // originally 5000
 
 #define READ_TIMEOUT 0
 #define OK_200 200
