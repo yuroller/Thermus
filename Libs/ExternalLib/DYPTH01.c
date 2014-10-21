@@ -1,6 +1,18 @@
+/*
+ * DYPTH01
+ * library for accessing SURE Electronics DYPTH01 thermal sensor
+ *
+ * Author: Yuri Valentini, Copyright (c) 2014, all rights reserved
+ * Date: 19 Oct 2014
+ * Released under the BSD license (http://www.opensource.org/licenses/bsd-license.php)
+ */
+ 
 #include "DYPTH01.h"
 #include "HWlib.h"
 
+#define FIRST_POLL_DELAY 3 // 30ms
+#define OTHER_POLL_DELAY 5 // 50ms
+#define POLL_RETRY_COUNT 8
 #define DATA_SIZE 4
 
 static unsigned char _data_buf[DATA_SIZE];
@@ -80,21 +92,23 @@ void TH01_InitPort(int pin_sdi, int pin_sdo, int pin_sck, int pin_ss_n)
 int TH01_ReadData(int *t, int *hr)
 {
     int i = 0;
-    // impiega circa 20ms per la trasmissione da quando si abbassa SS_NEG se il campione è pronto
-    // impiega 200ms per convertire il campione
+    // it takes about 20ms for transmission when SS_NEG is set low and sample is ready
+    // it takes 200ms for acquiring the sample
     //unsigned char buf[4];
     IFS2bits.SPI2IF = 0; // Clear the Interrupt flag
     IEC2bits.SPI2IE = 1; // Enable the interrupt
    
     _data_cnt = 0;
     IOPut(_pin_ss_n, OFF);
-    vTaskDelay(3); // attesa per campione pronto
-    while (DATA_SIZE != _data_cnt && i < 5) {
-        vTaskDelay(5);
+    vTaskDelay(FIRST_POLL_DELAY); // wait for sample to get ready
+    while (DATA_SIZE != _data_cnt && i < POLL_RETRY_COUNT) {
+        vTaskDelay(OTHER_POLL_DELAY);
         ++i;
     }
 
     if (DATA_SIZE != _data_cnt) {
+        IOPut(_pin_ss_n, ON);
+        IEC2bits.SPI2IE = 0; // Disable the interrupt
         return 1;
     }
     
