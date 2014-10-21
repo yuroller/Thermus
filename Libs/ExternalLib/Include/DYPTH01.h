@@ -7,7 +7,7 @@
  *
  * Author: Yuri Valentini, Copyright (c) 2014, all rights reserved
  * Date: 19 Oct 2014
- * Released under the BSD license (http://www.opensource.org/licenses/bsd-license.php)
+ * Released under the MIT license (http://opensource.org/licenses/MIT)
  */
 
 /*! Initializes SPI port for communication */
